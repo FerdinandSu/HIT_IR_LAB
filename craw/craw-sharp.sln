@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32407.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Craw", "Craw.csproj", "{2E02E0C2-68A3-42F1-9B2E-F90CFEEC302E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E02E0C2-68A3-42F1-9B2E-F90CFEEC302E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E02E0C2-68A3-42F1-9B2E-F90CFEEC302E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E02E0C2-68A3-42F1-9B2E-F90CFEEC302E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E02E0C2-68A3-42F1-9B2E-F90CFEEC302E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0E1057EC-4952-43DA-8A9D-2A71D12B06B0}
+	EndGlobalSection
+EndGlobal
