@@ -14,10 +14,6 @@ with open(stopwords_path, 'r', encoding='utf-8') as stopwords_file:
 
 
 def process_text(origin_line: str) -> list[str]:
-    if origin_line is None:
-        return None
-    # 去除Unicode空格
-    origin_line = origin_line.replace('\u00A0', '')
     # (string[][],?) ltp.seg(string[])
     processed_line, _ = ltp.seg([origin_line])
     processed_line = processed_line[0]
@@ -28,14 +24,8 @@ def process_document(document: dict) -> dict:
     output = dict()
     output['url'] = document['url']
     output['file_name'] = document['file_name']
-    segmented_title=process_text(document['title'])
-    output['segmented_title'] = segmented_title
-    if segmented_title is None:
-        return None
-    segmented_parapraghs = process_text(document['paragraghs'])
-    if segmented_parapraghs is None:
-        return None
-    output['segmented_parapraghs'] = segmented_parapraghs
+    output['segmented_title'] = process_text(document['title'])
+    output['segmented_parapraghs'] = process_text(document['paragraghs'])
     return output
 
 
@@ -48,9 +38,11 @@ total_count = len(origin)
 count = 0
 
 for document in origin:
-    processed_document = process_document(document)
-    if process_document:
+    try:
+        processed_document = process_document(document)
         result.append(process_document(document))
+    except:
+        pass
     count += 1
     if count % 100 == 0:
         print(str(count) + '/'+str(total_count)+'\n')

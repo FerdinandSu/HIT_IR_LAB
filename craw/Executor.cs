@@ -84,10 +84,12 @@ public class Executor
         for (; _hasAppendix < TargetAppendix ||
                _succeeded < Target;)
         {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {sw.Elapsed} Passed, {_hasAppendix}/{TargetAppendix} & {_succeeded}/{Target} Done.");
+            Console.Write($"[{DateTime.Now:HH:mm:ss}] {sw.Elapsed} Passed, {_hasAppendix}/{TargetAppendix} & {_succeeded}/{Target} Done.");
+            Console.SetCursorPosition(0, Console.GetCursorPosition().Top);
             await Task.Delay(1000);
 
         }
+        Console.WriteLine();
     }
     private async Task DoExecute()
     {
@@ -145,8 +147,15 @@ public class Executor
                 string.Join(' ',
                 html.DocumentNode.SelectNodes("//p")
                     .Select(n =>
-                        n.InnerText.Replace("\n", "")
-                            .Replace(" ", "")));
+                        n.InnerText
+                            .Trim()
+                            .Replace("\u201C", " ")
+                            .Replace("\u201D"," ")
+                            .Replace("\u00A0","")
+                            .Replace("\u2002", "")
+                            .Replace("\u2028", "")
+                            .Replace("\n", " ")
+                            ));
             var urls =
                 html.DocumentNode.SelectNodes("//a")
                     .Select(n => n.GetAttributeValue<string>("href", ""))
@@ -212,10 +221,13 @@ public class Executor
 
     public async Task Export(string path)
     {
+        if(File.Exists(path))File.Delete(path);
+
         await JsonSerializer.SerializeAsync<IEnumerable<Result>>(
-            File.Open(path, FileMode.CreateNew, FileAccess.Write),
+            File.Open(path, FileMode.OpenOrCreate, FileAccess.Write),
             _visit.Values, new JsonSerializerOptions
             {
+                
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             });
     }
