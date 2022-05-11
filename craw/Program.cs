@@ -1,4 +1,6 @@
 ﻿using CrawSharp;
+using System;
+using System.IO;
 
 var x = new Executor();
 
@@ -24,5 +26,5 @@ await x.StartWith("http://today.hit.edu.cn/");
 Console.WriteLine("Url Set Ready.");
 await x.Execute();
 Console.WriteLine("Craw Done.");
-await x.Export("craw.json");
+await x.Export("results/craw.json");
 Console.WriteLine("Done.");

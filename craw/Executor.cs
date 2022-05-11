@@ -39,10 +39,6 @@ public class Executor
 
     public async Task Login(string username, string password)
     => await _client.LoginAsync(username, password);
-    public Executor()
-    {
-        //_client.MaxResponseContentBufferSize=long.MaxValue;
-    }
     public async Task StartWith(string startUrl)
     {
         var html = new HtmlDocument();
@@ -220,7 +216,7 @@ public class Executor
             File.Open(path, FileMode.CreateNew, FileAccess.Write),
             _visit.Values, new JsonSerializerOptions
             {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs)
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             });
     }
 }
