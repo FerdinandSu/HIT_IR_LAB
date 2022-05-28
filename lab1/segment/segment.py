@@ -7,7 +7,7 @@ ltp = LTP()
 
 stopwords_path = "segment/stopwords(new).txt"
 origin_path = "results/craw.json"
-target_path = "results/preprocessed.json"
+target_path = "results/preprocessed_origin.json"
 
 with open(stopwords_path, 'r', encoding='utf-8') as stopwords_file:
     stopwords = set(stopwords_file.read().split('\n'))
