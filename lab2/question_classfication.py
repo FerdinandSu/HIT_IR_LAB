@@ -8,8 +8,9 @@ from model_io import process_text
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-from preprocessed import test_predict_path
+from strange_json import strange_json_to_array
 import joblib
+import json
 from os.path import exists
 
 lr_model_path, tf_idf_path = './question_classification/lr_model', './question_classification/tf_idf'
@@ -39,18 +40,22 @@ def ensure_tf_idf_vectors(train_set, force=False):
         return joblib.load(config.tf_idf_vectors_path)
 
 
-#// TODO
-def ensure_logistic_regression(x_train, y_train, force=False):  # solver选用默认的lbfgs, multi_class选用多分类问题中的multinomial
+def ensure_logistic_regression(train_data, train_label, force=False):
     if force or not exists(config.logistic_regression_path):
         print('正在通过网格搜索获取最佳模型参数...')
-        lr = LogisticRegression(max_iter=400, n_jobs=-1)
+        model = LogisticRegression(max_iter=400)
+        # 默认解法：L-BFGS算法
         param_grid = [
             {'C': [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000]}]
+        # 利用基于交叉验证的网格搜索算法自动调参
         grid_search = GridSearchCV(
-            lr, param_grid, cv=3, n_jobs=-1).fit(x_train, y_train)
-        joblib.dump(grid_search.best_estimator_,
-                    config.logistic_regression_path, compress=3)  # 导出模型
-        print('合理的超参数为', grid_search.best_params_)
+            model, param_grid, cv=3, n_jobs=-1)
+        best_param = grid_search.fit(
+            train_data, train_label, early_stopping_rounds=10)
+        # 自动调参，19轮无长进自动停止
+        joblib.dump(best_param.best_estimator_,
+                    config.logistic_regression_path, compress=3)
+        print('合理的超参数为', best_param.best_params_)
     else:
         return joblib.load(config.logistic_regression_path)
 
@@ -70,21 +75,26 @@ def main():
     print('*' * 100 + '\n正在加载VSM模型和LR逻辑回归模型...')
     train_data, train_label = load_question_data_set(
         config.train_question_path)
-    test_data, test_label = load_question_data_set(
-        config.train_question_path)
+    validate_data, validate_label = load_question_data_set(
+        config.validate_question_path)
     tf_idf_vec = ensure_tf_idf_vectors(train_data)
-    train_data, test_data = tf_idf_vec.transform(
-        train_data), tf_idf_vec.transform(test_data)
-    lr = ensure_logistic_regression(train_data,train_label)
-    print('模型准确率：%.4f%%' % (lr.score(test_data,test_label) * 100))
+    # 转换为TF-IDF向量
+    train_data_vec = tf_idf_vec.transform(        train_data)
+    validate_data_vec = tf_idf_vec.transform(validate_data)
+    lr = ensure_logistic_regression(train_data_vec, train_label)
+    accuracy=lr.score(validate_data_vec, validate_label)
+    print('LR模型准确率：%.4f%%' % (accuracy * 100))
 
     print('*' * 100 + '\n正在对测试集进行问题类别预测...')
-    json_lst = read_json(test_predict_path)  # 对测试集的问题进行类别预测
-    x_data = [' '.join(item['question']) for item in json_lst]
-    y_data = lr.predict(tf_idf_vec.transform(x_data))
-    for item, label in zip(json_lst, y_data):
+    test_data_set = strange_json_to_array(config.test_data_path)  # 对测试集的问题进行类别预测
+    test_data = [' '.join(item['question']) for item in test_data_set]
+    test_data_vec=tf_idf_vec.transform(test_data)
+    test_label_result = lr.predict(test_data_vec)
+    for item, label in zip(test_data_set, test_label_result):
         item['label'] = label
-    write_json(test_label_path, json_lst)
+    with open(config.question_classfication_result_path,'w',encoding='utf-8') as f:
+        json.dump(f,test_data_set)
+    write_json(test_label_path, test_data_set)
     print('预测结束\n' + '*' * 100)
 
 

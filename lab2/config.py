@@ -13,7 +13,9 @@ test_preprocessed_path='lab2/data/test_preprocessed.json'
 test_result_path='lab2/data/test_result.json'
 
 train_question_path='lab2/data/train_questions.txt'
-test_question_path='lab2/data/test_questions.txt'
+validate_question_path='lab2/data/test_questions.txt'
 
 tf_idf_vectors_path='lab2/data/tf_idf_vectors.joblib'
 logistic_regression_path='lab2/data/logistic_regression.joblib'
+
+question_classfication_result_path='lab2/data/question_classfication_result_path.json'
