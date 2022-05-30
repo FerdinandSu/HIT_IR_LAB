@@ -7,8 +7,23 @@ import json
 from math import log10
 import joblib
 import jieba
+import jieba.posseg as pos_seg
 
 #ltp = LTP()
+
+# 使用Paddle-Paddle
+use_paddle = True
+
+# 并行数，0为不并行
+use_parallel = 20
+
+paddle_ready = False
+
+if use_parallel > 0:
+    jieba.enable_parallel(use_parallel)
+
+if use_paddle:
+    jieba.enable_paddle()
 
 
 def ensure_stop_words() -> set[str]:
@@ -17,11 +32,16 @@ def ensure_stop_words() -> set[str]:
     return stop_words
 
 
-def process_text(origin_line: str, stop_words: set) -> list[str]:
+def cut_and_pos_text(origin_line: str, stop_words: set) -> list[tuple[str, str]]:
+    processed_line = pos_seg.cut(origin_line, use_paddle=use_paddle)
+    return [(word, type) for (word, type) in processed_line if word not in stop_words]
+
+
+def cut_text(origin_line: str, stop_words: set) -> list[str]:
     # (string[][],?) ltp.seg(string[])
     # processed_line, _ = ltp.seg([origin_line]) ltp也太慢了.......
     #processed_line = processed_line[0]
-    processed_line=jieba.cut(origin_line)
+    processed_line = jieba.cut(origin_line, use_paddle=use_paddle)
     return [word for word in processed_line if word not in stop_words]
 
 
@@ -30,13 +50,13 @@ def ensure_segmented(force: bool = False):
         print('预处理：分词')
         seg_passages = {}
         stop_words = ensure_stop_words()
-        origin=strange_json_to_array(config.origin_data_path)
-        total=len(origin)
-        progress=0
+        origin = strange_json_to_array(config.origin_data_path)
+        total = len(origin)
+        progress = 0
         for item in origin:
             seg_passages[item['pid']] = [
-                process_text(line, stop_words) for line in item['document']]
-            progress+=1
+                cut_text(line, stop_words) for line in item['document']]
+            progress += 1
             if progress % 100 == 0:
                 print('进度: %.2f%%' % (progress * 100/total))
         with open(config.segmented_data_path, "w", encoding="utf-8") as f:
@@ -45,7 +65,6 @@ def ensure_segmented(force: bool = False):
     else:
         with open(config.segmented_data_path, "r", encoding="utf-8") as f:
             return json.load(f)
-
 
 def ensure_model(force: bool = False) -> Model:
     '''
@@ -56,8 +75,8 @@ def ensure_model(force: bool = False) -> Model:
         segmented = ensure_segmented(force)
         term_freq = {}  # 词频Dictionary<id,Dictionary<word,int>>
         doc_freq = {}  # 文档频率Dictionary<id,word>
-        total=len(segmented)
-        progress=0
+        total = len(segmented)
+        progress = 0
         for id, passage in segmented.items():
             term_freq[id] = {}
             for word in [word for sentence in passage for word in sentence]:
@@ -66,7 +85,7 @@ def ensure_model(force: bool = False) -> Model:
                     doc_freq[word] = doc_freq[word] + \
                         1 if word in doc_freq else 1  # 计算每一个词项的df，保存在words中
                 term_freq[id][word] += 1
-                progress+=1
+                progress += 1
                 if progress % 100 == 0:
                     print('进度: %.2f%%' % (progress * 100/total))
         doc_count = len(segmented)
@@ -80,18 +99,17 @@ def ensure_model(force: bool = False) -> Model:
 
     return Model(weight, value_idf)
 
-
-def preprocess_data(origin: str, target: str)->list[dict]:
+def preprocess_data(origin: str, target: str) -> list[dict]:
     stop_words = ensure_stop_words()
     target_set = strange_json_to_array(origin)
     for item in target_set:
-        item['question'] = process_text(item['question'], stop_words)
+        item['question'] = cut_text(item['question'], stop_words)
     with open(target, "w", encoding="utf-8") as f:
         json.dump(target_set, f, ensure_ascii=False)
     return target_set
 
 
-def ensure_preprocess_data(origin: str, target: str, force=False)->list[dict]:
+def ensure_preprocess_data(origin: str, target: str, force=False) -> list[dict]:
     if force or not exists(target):
         return preprocess_data(origin, target)
     else:
@@ -100,12 +118,11 @@ def ensure_preprocess_data(origin: str, target: str, force=False)->list[dict]:
         return target_set
 
 
-def ensure_train(force=False)->list[dict]:
+def ensure_train(force=False) -> list[dict]:
     return ensure_preprocess_data(config.train_data_path,
-                           config.train_preprocessed_path, force)
+                                  config.train_preprocessed_path, force)
 
 
-def ensure_test(force=False)->list[dict]:
+def ensure_test(force=False) -> list[dict]:
     return ensure_preprocess_data(config.test_data_path,
-                           config.test_preprocessed_path, force)
-
+                                  config.test_preprocessed_path, force)

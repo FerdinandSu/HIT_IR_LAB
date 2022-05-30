@@ -1,5 +1,12 @@
 {
     "cSpell.words": [
-        "joblib"
+        "BFGS",
+        "Idfizer",
+        "joblib",
+        "Tfidf",
+        "Vectorizer"
+    ],
+    "python.analysis.extraPaths": [
+        "./lab2"
     ]
 }

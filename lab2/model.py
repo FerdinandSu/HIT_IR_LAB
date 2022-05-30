@@ -52,13 +52,13 @@ class Model(object):
     @staticmethod
     def __jaccard(doc_vec, q_vec_T, q_norm2):
         dot_prod = np.dot(doc_vec, q_vec_T)
-        doc_norm2 = np.linalg.norm(doc_vec, doc_vec.T)
+        doc_norm2 = np.dot(doc_vec, doc_vec.T)
         return dot_prod/(doc_norm2+q_norm2-dot_prod)
 
     def measure_jaccard(self, question: dict) -> MeasureResult:
         doc = self.documents_to_vec(question)
         q = self.question_to_vec(question).T
-        q_norm_2 = np.linalg.norm(q.T, q)
+        q_norm_2 = np.dot(q.T, q)
         return Model._max_of(
             [MeasureResult(id, Model.__jaccard(vec, q, q_norm_2)) for (id, vec) in doc.items()])
 
