@@ -15,14 +15,14 @@ from os.path import exists
 
 class QuestionClassifier(TfIdfizer):
     def __init__(self, train_set_replication=1):
-        TfIdfizer.__init__(self, lambda: self.__train_data,config.question_classification_tf_idf_vectors_path)
+        TfIdfizer.__init__(self, lambda: self.train_data,config.question_classification_tf_idf_vectors_path)
         self.__train_data = None
         self.__train_label = None
         self.__train_data_vec = None
         self.__model = None
         self.__train_set_replication = train_set_replication
 
-    def run(self, origin: list[str]):
+    def run(self, origin: list):
         test_data_vec = self.tf_idf_ize(origin)
         return self.model.predict(test_data_vec)
 
@@ -49,7 +49,7 @@ class QuestionClassifier(TfIdfizer):
                     [label, line] = line.strip().split('\t')
                     for _ in range(replication):
                         data.append(
-                            ' '.join(cut_text(line, self.__stop_words)))
+                            ' '.join(cut_text(line, self._stop_words)))
                         labels.append(label)
         return data, labels
 

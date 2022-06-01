@@ -14,8 +14,8 @@ import jieba.posseg as pos_seg
 # 使用Paddle-Paddle
 use_paddle = True
 
-# 并行数，0为不并行
-use_parallel = 20
+# 并行数，0为不并行；Windows下不可并行。
+use_parallel = 0
 
 paddle_ready = False
 
@@ -26,18 +26,20 @@ if use_paddle:
     jieba.enable_paddle()
 
 
-def ensure_stop_words() -> set[str]:
+def ensure_stop_words() -> set:
     with open(config.stop_words_path, 'r', encoding='utf-8') as stop_words_file:
         stop_words = set(stop_words_file.read().split('\n'))
     return stop_words
 
 
-def cut_and_pos_text(origin_line: str, stop_words: set) -> list[tuple[str, str]]:
+def cut_and_pos_text(origin_line: str, stop_words: set) -> list:
     processed_line = pos_seg.cut(origin_line, use_paddle=use_paddle)
     return [(word, type) for (word, type) in processed_line if word not in stop_words]
 
+def cut_and_pos_text_array(origin_line: list, stop_words: set) -> list:
+    return cut_and_pos_text(''.join(origin_line),stop_words)
 
-def cut_text(origin_line: str, stop_words: set) -> list[str]:
+def cut_text(origin_line: str, stop_words: set) -> list:
     # (string[][],?) ltp.seg(string[])
     # processed_line, _ = ltp.seg([origin_line]) ltp也太慢了.......
     #processed_line = processed_line[0]
@@ -99,7 +101,7 @@ def ensure_model(force: bool = False) -> Model:
 
     return Model(weight, value_idf)
 
-def preprocess_data(origin: str, target: str) -> list[dict]:
+def preprocess_data(origin: str, target: str) -> list:
     stop_words = ensure_stop_words()
     target_set = strange_json_to_array(origin)
     for item in target_set:
@@ -109,7 +111,7 @@ def preprocess_data(origin: str, target: str) -> list[dict]:
     return target_set
 
 
-def ensure_preprocess_data(origin: str, target: str, force=False) -> list[dict]:
+def ensure_preprocess_data(origin: str, target: str, force=False) -> list:
     if force or not exists(target):
         return preprocess_data(origin, target)
     else:
@@ -118,11 +120,11 @@ def ensure_preprocess_data(origin: str, target: str, force=False) -> list[dict]:
         return target_set
 
 
-def ensure_train(force=False) -> list[dict]:
+def ensure_train(force=False) -> list:
     return ensure_preprocess_data(config.train_data_path,
                                   config.train_preprocessed_path, force)
 
 
-def ensure_test(force=False) -> list[dict]:
+def ensure_test(force=False) -> list:
     return ensure_preprocess_data(config.test_data_path,
                                   config.test_preprocessed_path, force)

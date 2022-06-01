@@ -6,7 +6,7 @@ import json
 import numpy as np
 from my_wheels import *
 from tf_idf_izer import TfIdfizer
-from model_io import cut_and_pos_text, cut_text, ensure_segmented
+from model_io import cut_and_pos_text, cut_and_pos_text_array, cut_text, ensure_segmented
 from distance import quick_levenshtein
 from strange_json import strange_json_to_array
 from sklearn.model_selection import train_test_split
@@ -19,7 +19,7 @@ import config
 class AnswerSentenceSelector(TfIdfizer):
     def __init__(self):
         TfIdfizer.__init__(
-            self, lambda: [' '.join(item) for (_, item) in self.segmented.items()], config.tf_idf_vectors_path)
+            self, lambda: [' '.join([str for sub_item in item for str in sub_item]) for (_, item) in self.segmented.items()], config.answer_selected_tf_idf_vectors_path)
         self.__segmented = None
 
     @property
@@ -28,8 +28,9 @@ class AnswerSentenceSelector(TfIdfizer):
             self.__segmented = ensure_segmented()
         return self.__segmented
 
-    def __as_vector(self, seq: list[str]) -> np.ndarray:
-        return np.array(self.tf_idf_ize(seq))
+    def __as_vector(self, seq: list) -> np.ndarray:
+        vec = self.tf_idf_ize([' '.join(seq)]).toarray()
+        return np.array(vec[0])
 
     def get_features(self, question: list, answer: list):
         """
@@ -39,7 +40,8 @@ class AnswerSentenceSelector(TfIdfizer):
         answer_bi_gram_set = {
             prefix + suffix for (prefix, suffix) in zip(answer[:-1], answer[1:])}
         answer_size = len(answer)
-
+        if answer_size == 0:
+            return []
         # 参阅 https://github.com/fxsjy/jieba 和 https://www.biaodianfu.com/pos-tagging-set.html
         function_word_types = {'d', 'p', 'c', 'u', 'xc', 'w'}
         question_sentence = ''.join(question)
@@ -47,7 +49,7 @@ class AnswerSentenceSelector(TfIdfizer):
         answer_sentence_size = len(answer_sentence)
         result = []
         result.append('1:%d' % len(answer))  # 总长度
-        result.append('2:%d' % count_if(cut_and_pos_text(answer),
+        result.append('2:%d' % count_if(cut_and_pos_text_array(answer, self._stop_words),
                                         lambda x: x[1] not in function_word_types))  # 答案句实词数
         result.append('3:%d' % abs(len(question) - len(answer)))  # 问句与答案句长度差异
         result.append('4:%f' % (count_if(
@@ -77,25 +79,29 @@ class AnswerSentenceSelector(TfIdfizer):
         if force or not exists(config.answer_feature_train_path) or not exists(config.answer_feature_validate_path):
             print('Lazy load: train feature file.')
             train_set = strange_json_to_array(config.train_data_path)
-            feature_dict = []
+            feature_dict = {}
             for item in train_set:
                 qid = item['qid']
                 pid = str(item['pid'])
-                question = cut_text(item['question'])
-                answers = [cut_text(line) for line in item['answer_sentence']]
+                question = cut_text(item['question'], self._stop_words)
+                answers = {' '.join(cut_text(line, self._stop_words))
+                           for line in item['answer_sentence']}
                 feature_dict[qid] = []
 
                 for origin_passage in self.segmented[pid]:
-                    ranking = 3 if origin_passage in answers else 0
-                    feature = ' '.join(self.get_features(
-                        question, origin_passage))
+                    ranking = 3 if ' '.join(origin_passage) in answers else 0
+                    features = self.get_features(question, origin_passage)
+                    if len(features)==0:
+                        continue
+                    feature = ' '.join(features)
                     feature_dict[qid].append(
                         '%d qid:%d %s' % (ranking, qid, feature))
             all_features = [value for (_, value) in feature_dict.items()]
-
             # 交叉验证......
             train_features, validate_features = train_test_split(
                 all_features, test_size=test_size)
+            train_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
+            validate_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
             with open(config.answer_feature_train_path, 'w', encoding='utf-8') as f:
                 f.write(
                     '\n'.join([feature for fl in train_features for feature in fl]))
@@ -110,13 +116,14 @@ class AnswerSentenceSelector(TfIdfizer):
 
     def __ensure_test_feature(self, force=False):
         if force or not exists(config.answer_feature_test_path):
-            print('Lazy load: train feature file.')
-            test_set = strange_json_to_array(config.test_data_path)
-            feature_dict = []
+            print('Lazy load: test feature file.')
+            with open(config.question_classification_result_path,'r',encoding='utf-8') as f:
+                test_set=json.load(f)
+            feature_dict = {}
             for item in test_set:  # 遍历train.json文件中的每一行query信息
                 qid = item['qid']
                 pid = str(item['pid'])
-                question = cut_text(item['question'])
+                question = cut_text(item['question'], self._stop_words)
                 feature_dict[qid] = []
 
                 for origin_passage in self.segmented[pid]:
@@ -126,6 +133,7 @@ class AnswerSentenceSelector(TfIdfizer):
                     feature_dict[qid].append(
                         '0 qid:%d %s' % (qid, feature))
             all_features = [value for (_, value) in feature_dict.items()]
+            all_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
             with open(config.answer_feature_test_path, 'w', encoding='utf-8') as f:
                 f.write(
                     '\n'.join([feature for fl in all_features for feature in fl]))
@@ -189,4 +197,4 @@ class AnswerSentenceSelector(TfIdfizer):
             item['answer_sentence'] = [seg_passage[rank[1]]
                                        for rank in rank_lst[:sel_num]]
         with open(config.answer_selected_test_result_path, 'w', encoding='utf-8') as f:
-            json.dump(f, test_set)
+            json.dump(test_set, f)

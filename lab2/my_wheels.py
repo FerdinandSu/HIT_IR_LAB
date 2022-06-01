@@ -21,7 +21,7 @@ def size_of_longest_common_sequence(s1, s2):
     s2_size = len(s2)
     s1 = " "+s1
     s2 = " "+s2
-    dp = [[[0] * (s2_size + 1)] * (s1_size + 1)]
+    dp = [[0] * (s2_size + 1)] * (s1_size + 1)
     for i in range(1, s1_size+1):
         for j in range(1, s2_size+1):
             if s1[i] == s2[j]:
@@ -36,7 +36,7 @@ def size_of_longest_common_substring(s1, s2):
     s2_size = len(s2)
     s1 = " "+s1
     s2 = " "+s2
-    dp = [[[0] * (s2_size + 1)] * (s1_size + 1)]
+    dp = [[0] * (s2_size + 1)] * (s1_size + 1)
     max_length = 0
     for i in range(1, s1_size+1):
         for j in range(1, s2_size+1):

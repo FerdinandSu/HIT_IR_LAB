@@ -1,5 +1,8 @@
 #ltp>=4.0.0
-sklearn=1.1.1
-jieba=0.42.1
-paddlepaddle==2.3.0 -i https://mirror.baidu.com/pypi/simple
-nltk=3.7
+sklearn
+jieba
+paddlepaddle-tiny
+nltk
+protobuf==3.19.0
+opencv-python
+distance

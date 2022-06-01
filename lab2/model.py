@@ -19,7 +19,7 @@ class Model(object):
         self.idf = idf
 
     @staticmethod
-    def _max_of(sequence: list[MeasureResult]) -> MeasureResult:
+    def _max_of(sequence: list) -> MeasureResult:
         max = MeasureResult(-1, 0)
         for current in sequence:
             if max.similarity < current.similarity:
@@ -70,14 +70,14 @@ class Model(object):
             'jac': self.measure_jaccard
         }
 
-    def __tf_idf(self, question: list[str]) -> dict:
+    def __tf_idf(self, question: list) -> dict:
         term_freq = {}
         for word in question:
             term_freq[word] = term_freq.get(word, 0) + 1
         return {word:  (1 + log10(tf))*self.idf.get(word, 0)  # 计算问题的tf-idf
                 for (word, tf) in term_freq.items()}
 
-    def evaluate(self, measure, train_set: list[dict]) -> float:
+    def evaluate(self, measure, train_set: list) -> float:
         correct = 0
         progress = 0
         total = len(train_set)
@@ -91,7 +91,7 @@ class Model(object):
                 print('进度: %.2f%%' % (progress * 100/total))
         return correct / total
 
-    def run(self, measure, test_set: list[dict], write_to: str):
+    def run(self, measure, test_set: list, write_to: str):
         for item in test_set:
             item['pid'] = measure(self.__tf_idf(item['question'])).document_id
         with open(write_to, 'w', encoding='utf-8') as f:

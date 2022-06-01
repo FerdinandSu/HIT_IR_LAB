@@ -42,7 +42,7 @@ def __ensure_svm_rank_bin(force=False):
 
 # 垃圾Windows，CMD里必须用\\分割路径
 def __path_fix(path:str):
-    return os.path.join(path.split('/'))
+    return path.replace('/','\\') if uname=='WindowsPE' else path
 
 def train(train_set:str,model:str):
     __ensure_svm_rank_bin()

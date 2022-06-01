@@ -7,7 +7,7 @@
 from json import loads, dumps
 
 
-def strange_json_to_array(path: str) -> list[dict]:
+def strange_json_to_array(path: str) -> list:
     with open(path, 'r', encoding='utf-8') as f:
         return [loads(line) for line in f]
 

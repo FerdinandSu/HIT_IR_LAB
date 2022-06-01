@@ -32,6 +32,6 @@ answer_selected_validate_path='lab2/data/answer_selected_validate.txt'
 answer_selected_test_path='lab2/data/answer_selected_test.txt'
 
 answer_selected_test_result_path='lab2/data/answer_selected_test_result.txt'
-
+answer_selected_tf_idf_vectors_path='lab2/data/answer_selected_tf_idf_vectors.joblib'
 answer_span_test_result_path='lab2/data/answer_selected_test_result.txt'
 final_ans_path='lab2/data/test_answer.json'

@@ -1,5 +1,5 @@
 '''
-使用逻辑斯蒂回归和支持向量机的问题分类
+使用逻辑斯蒂回归的问题分类
 '''
 
 
@@ -12,7 +12,7 @@ import config
 run_validate = True
 
 # 是否处理测试集
-run_predict = False
+run_predict = True
 
 # 训练集太小，重复三次来防止以下Warning：
 # _split.py:680: UserWarning: The least populated class in y has only 1 members, which is less than n_splits=3
@@ -33,4 +33,4 @@ if run_predict:
     for item, label in zip(test_data_set, test_label_result):
         item['class'] = label
     with open(config.question_classification_result_path, 'w', encoding='utf-8') as f:
-        json.dump(f, test_data_set)
+        json.dump(test_data_set,f)
