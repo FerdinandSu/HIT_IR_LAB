@@ -13,9 +13,11 @@ import joblib
 
 from os.path import exists
 
+
 class QuestionClassifier(TfIdfizer):
     def __init__(self, train_set_replication=1):
-        TfIdfizer.__init__(self, lambda: self.train_data,config.question_classification_tf_idf_vectors_path)
+        TfIdfizer.__init__(self, lambda: self.train_data,
+                           config.question_classification_tf_idf_vectors_path)
         self.__train_data = None
         self.__train_label = None
         self.__train_data_vec = None
@@ -57,8 +59,7 @@ class QuestionClassifier(TfIdfizer):
     def model(self):
         if self.__model == None:
             print('Lazy Load: logistic model')
-            self.__model = self.__ensure_logistic_regression(
-                self.train_data_vec, self.train_label)
+            self.__model = self.__ensure_logistic_regression()
         return self.__model
 
     @property
@@ -77,10 +78,11 @@ class QuestionClassifier(TfIdfizer):
                 config.train_question_path, self.__train_set_replication)
         return self.__train_label
 
-    @staticmethod
-    def __ensure_logistic_regression(train_data, train_label, force=False):
+    def __ensure_logistic_regression(self, force=False):
         if force or not exists(config.logistic_regression_path):
             print('Training: Logistic Regression.')
+            train_data = self.train_data_vec
+            train_label = self.train_label
             model = LogisticRegression(max_iter=1000)
             # 默认解法：L-BFGS算法
             param_grid = [

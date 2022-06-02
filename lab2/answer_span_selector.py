@@ -5,7 +5,6 @@ import json
 import config
 from stop_words_provider import StopWordsProvider
 from strange_json import array_to_strange_json, strange_json_to_array
-from answer_sentence_selection import test_ans_path as test_select_path
 from question_classifier import QuestionClassifier
 from extern_wheels import *
 from model_io import cut_and_pos_text,cut_text
@@ -71,7 +70,7 @@ class AnswerSpanSelector(StopWordsProvider):
                 results = re.findall(r'\d{1,2}月', ans)
         return results[0] if results else ans
 
-    def select_answer(self,query_type: str, answer_sentence: list) -> str:
+    def select_answer(self,query_type: str, answer_sentence: str) -> str:
         if query_type.startswith('HUM'):
             res = self.__select_answer_human( answer_sentence)
         elif query_type.startswith('LOC'):
@@ -90,15 +89,15 @@ class AnswerSpanSelector(StopWordsProvider):
         with open(config.answer_selected_test_result_path,'r',encoding='utf-8') as f:
             result=json.load(f)
         for item in result:
-            item['answer'] = AnswerSpanSelector.select_answer(
-                 item['label'], item['answer_sentence'][0])
+            item['answer'] = self.select_answer(
+                 item['class'], ''.join( item['answer_sentence'][0]))
         with open(config.answer_span_test_result_path,'w',encoding='utf-8') as f:
             json.dump(result,f)
         array_to_strange_json(config.final_ans_path,result)
     def validate(self):
         classifier=QuestionClassifier(3)
-        train_data_set = strange_json_to_array(
-        config.test_data_path)
+        with open(config.train_preprocessed_path ,'r',encoding='utf-8') as f:
+            train_data_set = json.load(f)
         train_data = [' '.join(item['question']) for item in train_data_set]
         train_label_result = classifier.run(train_data)
         bleu=0
@@ -107,7 +106,7 @@ class AnswerSpanSelector(StopWordsProvider):
         actual_list=[]
         for item, label in zip(train_data_set, train_label_result):
             expected = item['answer']
-            actual = AnswerSpanSelector.select_answer(label,cut_text(item['answer_sentence'][0])) 
+            actual = self.select_answer(label,item['answer_sentence'][0]) 
             bleu += bleu1(actual, expected)
             (_,_, this_f1)=precision_recall_f1(actual, expected)
             f1+=this_f1

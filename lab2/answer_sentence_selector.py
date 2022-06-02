@@ -6,7 +6,7 @@ import json
 import numpy as np
 from my_wheels import *
 from tf_idf_izer import TfIdfizer
-from model_io import cut_and_pos_text, cut_and_pos_text_array, cut_text, ensure_segmented
+from model_io import cut_and_pos_text_array, cut_text, ensure_segmented
 from distance import quick_levenshtein
 from strange_json import strange_json_to_array
 from sklearn.model_selection import train_test_split
@@ -47,8 +47,10 @@ class AnswerSentenceSelector(TfIdfizer):
         question_sentence = ''.join(question)
         answer_sentence = ''.join(answer)
         answer_sentence_size = len(answer_sentence)
+        if answer_sentence_size == 0:
+            return []
         result = []
-        result.append('1:%d' % len(answer))  # 总长度
+        result.append('1:%d' % answer_size)  # 总长度
         result.append('2:%d' % count_if(cut_and_pos_text_array(answer, self._stop_words),
                                         lambda x: x[1] not in function_word_types))  # 答案句实词数
         result.append('3:%d' % abs(len(question) - len(answer)))  # 问句与答案句长度差异
@@ -91,7 +93,7 @@ class AnswerSentenceSelector(TfIdfizer):
                 for origin_passage in self.segmented[pid]:
                     ranking = 3 if ' '.join(origin_passage) in answers else 0
                     features = self.get_features(question, origin_passage)
-                    if len(features)==0:
+                    if len(features) == 0:
                         continue
                     feature = ' '.join(features)
                     feature_dict[qid].append(
@@ -100,8 +102,10 @@ class AnswerSentenceSelector(TfIdfizer):
             # 交叉验证......
             train_features, validate_features = train_test_split(
                 all_features, test_size=test_size)
-            train_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
-            validate_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
+            train_features.sort(key=lambda lst: int(
+                lst[0].split()[1].split(':')[1]))
+            validate_features.sort(key=lambda lst: int(
+                lst[0].split()[1].split(':')[1]))
             with open(config.answer_feature_train_path, 'w', encoding='utf-8') as f:
                 f.write(
                     '\n'.join([feature for fl in train_features for feature in fl]))
@@ -117,23 +121,33 @@ class AnswerSentenceSelector(TfIdfizer):
     def __ensure_test_feature(self, force=False):
         if force or not exists(config.answer_feature_test_path):
             print('Lazy load: test feature file.')
-            with open(config.question_classification_result_path,'r',encoding='utf-8') as f:
-                test_set=json.load(f)
+            with open(config.question_classification_result_path, 'r', encoding='utf-8') as f:
+                test_set = json.load(f)
             feature_dict = {}
             for item in test_set:  # 遍历train.json文件中的每一行query信息
                 qid = item['qid']
                 pid = str(item['pid'])
-                question = cut_text(item['question'], self._stop_words)
+                question = item['question']
                 feature_dict[qid] = []
 
                 for origin_passage in self.segmented[pid]:
+                    if len(origin_passage) <= 1:
+                        continue
+                    print(f'doing qid=={qid},origin={origin_passage}')
+                    try:
+                        features = self.get_features(question, origin_passage)
 
-                    feature = ' '.join(self.get_features(
-                        question, origin_passage))
+                    except Exception as ex:
+                        print(ex)
+
+                    if len(features) == 0:
+                        continue
+                    feature = ' '.join(features)
                     feature_dict[qid].append(
                         '0 qid:%d %s' % (qid, feature))
             all_features = [value for (_, value) in feature_dict.items()]
-            all_features.sort(key=lambda lst: int(lst[0].split()[1].split(':')[1]))
+            all_features.sort(key=lambda lst: int(
+                lst[0].split()[1].split(':')[1]))
             with open(config.answer_feature_test_path, 'w', encoding='utf-8') as f:
                 f.write(
                     '\n'.join([feature for fl in all_features for feature in fl]))
@@ -157,7 +171,7 @@ class AnswerSentenceSelector(TfIdfizer):
             correct = 0
             for expected_line, actual_line in zip(expected_file, actual_file):
                 if len(expected_line) == 1:
-                    break
+                    continue # 去冗余内容，如“English”，“中文”，空行
                 qid = int(expected_line.split()[1].split(':')[1])
                 expected, actual = expected_set.get(
                     qid, []), actual_set.get(qid, [])
@@ -176,6 +190,7 @@ class AnswerSentenceSelector(TfIdfizer):
     def predict(self, sel_num=1):
         self.__ensure_test_feature()
         svm_rank.predict(config.answer_feature_test_path,
+                        config.answer_selector_model_path,
                          config.answer_selected_test_path)
         labels = {}
         with open(config.answer_feature_test_path, 'r', encoding='utf-8') as feature_file, open(config.answer_selected_test_path, 'r', encoding='utf-8') as result_file:
@@ -188,12 +203,13 @@ class AnswerSentenceSelector(TfIdfizer):
                     labels[qid] = []
                 labels[qid].append(
                     (float(result_line.strip()), len(labels[qid])))
-        test_set = strange_json_to_array(config.test_data_path)
+        with open(config.question_classification_result_path, 'r', encoding='utf-8') as f:
+            test_set = json.load(f)
         for item in test_set:
             qid = item['qid']
-            pid = item['pid']
+            pid = str(item['pid'])
             rank_lst, seg_passage = sorted(
-                labels[qid], key=lambda val: val[0], reverse=True), self.segmented[str(pid)]
+                labels[qid], key=lambda val: val[0], reverse=True), self.segmented[pid]
             item['answer_sentence'] = [seg_passage[rank[1]]
                                        for rank in rank_lst[:sel_num]]
         with open(config.answer_selected_test_result_path, 'w', encoding='utf-8') as f:

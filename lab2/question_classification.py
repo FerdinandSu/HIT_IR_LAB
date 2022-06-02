@@ -9,7 +9,7 @@ from strange_json import strange_json_to_array
 import config
 
 # 是否验证模型
-run_validate = True
+run_validate = False
 
 # 是否处理测试集
 run_predict = True
@@ -26,11 +26,11 @@ if run_validate:
     print('Accuracy: ：%.4f%%' % (accuracy * 100))
 if run_predict:
     print('Classifying......')
-    test_data_set = strange_json_to_array(
-        config.test_data_path)
+    with open(config.test_result_path,'r',encoding='utf-8') as f:
+        test_data_set = json.load(f)
     test_data = [' '.join(item['question']) for item in test_data_set]
     test_label_result = classifier.run(test_data)
     for item, label in zip(test_data_set, test_label_result):
         item['class'] = label
     with open(config.question_classification_result_path, 'w', encoding='utf-8') as f:
-        json.dump(test_data_set,f)
+        json.dump(test_data_set,f,ensure_ascii=False)

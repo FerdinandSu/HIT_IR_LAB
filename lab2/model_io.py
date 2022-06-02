@@ -46,6 +46,14 @@ def cut_text(origin_line: str, stop_words: set) -> list:
     processed_line = jieba.cut(origin_line, use_paddle=use_paddle)
     return [word for word in processed_line if word not in stop_words]
 
+def ensure_preprocessed(force: bool = False):
+    if force or not exists(config.test_result_path):
+        model=ensure_model(force)
+        test_set = ensure_test(force)
+        model.run(model.measure_inner_product, test_set, config.test_result_path)
+    with open(config.test_result_path, 't', encoding='utf-8') as f:
+        return json.load(f)
+    
 
 def ensure_segmented(force: bool = False):
     if force or not exists(config.segmented_data_path):
