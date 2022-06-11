@@ -9,10 +9,11 @@ from strange_json import strange_json_to_array
 import config
 
 # 是否验证模型
-run_validate = False
+run_validate = True
+# 结果：65.0951%
 
 # 是否处理测试集
-run_predict = True
+run_predict = False
 
 # 训练集太小，重复三次来防止以下Warning：
 # _split.py:680: UserWarning: The least populated class in y has only 1 members, which is less than n_splits=3

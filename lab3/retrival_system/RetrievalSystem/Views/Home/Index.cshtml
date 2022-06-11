@@ -1,0 +1,75 @@
+﻿@model SearchResultModel
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">今日哈工业简单检索系统</h1>
+    @if (Model is not null)
+    {
+        <h2>@Model.Role</h2>
+    }
+    <form asp-controller="Home" asp-action="Search">
+        <p>
+            搜索网页: <input type="text" name="SearchWord" />
+            <input type="submit" value="检索" />
+        </p>
+    </form>
+
+    <form asp-controller="Home" asp-action="SearchFile">
+
+        <p>
+            搜索文件: <input type="text" name="SearchWord" />
+            <input type="submit" value="检索" />
+        </p>
+    </form>
+    
+</div>
+
+@if (Model?.CommonSearchResult is not null)
+{
+    <ol class="list-group list-group-numbered">
+        @foreach (var item in Model.CommonSearchResult) 
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">
+                        <a href="@item.Url">
+                            @item.OriginTitle
+                        </a>
+                    </div>
+                    @(item.OriginParagraphs.Length>33? item.OriginParagraphs[..30]+"......":item.OriginParagraphs)
+                </div>
+                <span class="badge bg-primary rounded-pill">
+                    @item.Date.ToLongDateString()
+                </span>
+            </li>
+        }
+    </ol>
+
+}
+else if(Model?.FileSearchResult is not null)
+{
+    <ol class="list-group list-group-numbered">
+        @foreach (var (item,fileName) in Model.FileSearchResult) 
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">
+                        <a href="/Home/File?fileName=@fileName">
+                            @fileName
+                        </a>
+                    </div>
+                    来自文章《<a href="@item.Url">
+                        @item.OriginTitle
+                    </a>》：
+                    @(item.OriginParagraphs.Length>33? item.OriginParagraphs[..30]+"......":item.OriginParagraphs)
+                </div>
+                <span class="badge bg-primary rounded-pill">
+                    @item.Date.ToLongDateString()
+                </span>
+            </li>
+        }
+    </ol>
+}

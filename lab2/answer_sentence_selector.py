@@ -168,6 +168,7 @@ class AnswerSentenceSelector(TfIdfizer):
         with open(config.answer_feature_validate_path, 'r', encoding='utf-8') as expected_file, open(config.answer_selected_validate_path, 'r', encoding='utf-8') as actual_file:
             expected_set = {}
             actual_set = {}
+            total=0
             correct = 0
             for expected_line, actual_line in zip(expected_file, actual_file):
                 if len(expected_line) == 1:
@@ -183,9 +184,10 @@ class AnswerSentenceSelector(TfIdfizer):
                     expected = max_with(
                         expected_set[qid], lambda item: item[0])
                     actual = max_with(actual_set[qid], lambda item: item[0])
+                    total+=1
                     if expected == actual:
                         correct += 1
-            return correct/len(expected_set)
+            return correct/total
 
     def predict(self, sel_num=1):
         self.__ensure_test_feature()

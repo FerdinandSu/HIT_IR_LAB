@@ -90,7 +90,7 @@ class AnswerSpanSelector(StopWordsProvider):
             result=json.load(f)
         for item in result:
             item['answer'] = self.select_answer(
-                 item['class'], ''.join( item['answer_sentence'][0]))
+                 item['class'], ''.join( item[ret'answer_sentence'][0]))
         with open(config.answer_span_test_result_path,'w',encoding='utf-8') as f:
             json.dump(result,f)
         array_to_strange_json(config.final_ans_path,result)

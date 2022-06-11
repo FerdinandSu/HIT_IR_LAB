@@ -1,10 +1,11 @@
 from answer_span_selector import AnswerSpanSelector
 
 # 是否验证模型
-run_validate = False
+run_validate = True
+# Average BLEU=0.40, F1=0.48; Exact Match=14.4619%
 
 # 是否处理测试集
-run_predict = True
+run_predict = False
 
 selector=AnswerSpanSelector()
 

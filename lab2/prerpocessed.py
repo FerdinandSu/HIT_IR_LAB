@@ -4,9 +4,9 @@
 
 from model_io import *
 
-run_validate=False
+run_validate=True
 
-run_predict=True
+run_predict=False
 
 print('Loading Model......')
 model = ensure_model()

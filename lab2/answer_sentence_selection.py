@@ -1,10 +1,11 @@
 from answer_sentence_selector import AnswerSentenceSelector
 
 # 是否验证模型
-run_validate = False
+run_validate = True
+# 46%
 
 # 是否处理测试集
-run_predict = True
+run_predict = False
 
 selector = AnswerSentenceSelector()
 
